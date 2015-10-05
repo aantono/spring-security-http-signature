@@ -1,0 +1,97 @@
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+apply plugin: 'groovy'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+//apply plugin: 'git'
+apply plugin: 'com.jfrog.bintray'
+
+apply plugin: 'signing'
+
+group = 'ws.antonov.spring.security.http.signature'
+version = '0.1'
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+
+//buildscript {
+//    repositories {
+//        mavenCentral()
+//        jcenter()
+//    }
+//    dependencies {
+//        classpath 'org.ajoberstar:gradle-git:0.1.0'
+//        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:0.5'
+//    }
+//}
+
+plugins {
+    id "com.jfrog.bintray" version "1.3.1"
+}
+
+publishing {
+    publications {
+        MyPublication(MavenPublication) {
+            from components.java
+            groupId project.group
+            artifactId project.name
+            version project.version
+        }
+    }
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    pkg {
+        repo = 'maven'
+        name = project.name
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/bintray/gradle-bintray-plugin.git'
+    }
+}
+
+test {
+    //jvmArgs '-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005'
+    //debug true
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'javax.servlet', name: 'javax.servlet-api', version: '3.0.1'
+    compile group: 'org.springframework.security', name: 'spring-security-web', version: '4.0.2.RELEASE'
+    compile group: 'net.adamcin.httpsig', name: 'httpsig-api', version: '1.2.0'
+    testCompile group: 'junit', name: 'junit', version: '4.8.1'
+    testCompile group: 'org.springframework', name: 'spring-test', version: '4.2.1.RELEASE'
+}
+
+project.ext.set("signing.secretKeyRingFile", new File("${System.properties['user.home']}/.gnupg/secring.gpg"))
+
+task sourcesJar(type: Jar, dependsOn:classes) {
+     classifier = 'sources'
+     from sourceSets.main.allSource
+}
+
+task groovydocJar(type: Jar, dependsOn:groovydoc) {
+     classifier = 'groovydoc'
+     from groovydoc.destinationDir
+}
+
+artifacts {
+     archives sourcesJar
+     archives groovydocJar
+}
+
+signing {
+//     required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
+     sign configurations.archives
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.7'
+}
+
+
+
